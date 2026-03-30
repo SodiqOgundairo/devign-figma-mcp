@@ -1,0 +1,1 @@
+{"version":3,"file":"mutation.d.ts","sourceRoot":"","sources":["../../src/tools/mutation.ts"],"names":[],"mappings":"AACA,OAAO,KAAK,EAAE,SAAS,EAAE,MAAM,yCAAyC,CAAC;AACzE,OAAO,KAAK,EAAE,QAAQ,EAAE,MAAM,iBAAiB,CAAC;AAIhD,wBAAgB,qBAAqB,CAAC,MAAM,EAAE,SAAS,EAAE,MAAM,EAAE,QAAQ,QAoDxE"}

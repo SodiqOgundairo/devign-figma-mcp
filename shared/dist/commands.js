@@ -1,0 +1,38 @@
+export const CommandType = {
+    // Creation
+    CREATE_FRAME: "create_frame",
+    CREATE_COMPONENT: "create_component",
+    ADD_TEXT: "add_text",
+    ADD_RECTANGLE: "add_rectangle",
+    ADD_ELLIPSE: "add_ellipse",
+    ADD_SHAPE: "add_shape",
+    // Styling
+    SET_STYLES: "set_styles",
+    LIST_STYLES: "list_styles",
+    APPLY_STYLE: "apply_style",
+    // Layout
+    APPLY_AUTO_LAYOUT: "apply_auto_layout",
+    // Reading
+    READ_CURRENT_PAGE: "read_current_page",
+    GET_NODE_BY_ID: "get_node_by_id",
+    // Components
+    LIST_COMPONENTS: "list_components",
+    CREATE_INSTANCE: "create_instance",
+    SET_OVERRIDES: "set_overrides",
+    SWAP_COMPONENT: "swap_component",
+    // Variables
+    LIST_VARIABLES: "list_variables",
+    BIND_VARIABLE: "bind_variable",
+    // Mutation
+    EDIT_NODE: "edit_node",
+    DELETE_NODE: "delete_node",
+    // Organization
+    GROUP_NODES: "group_nodes",
+    FLATTEN_NODE: "flatten_node",
+    CREATE_PAGE: "create_page",
+    // Export
+    EXPORT_NODE: "export_node",
+    // System
+    PING: "ping",
+};
+//# sourceMappingURL=commands.js.map
