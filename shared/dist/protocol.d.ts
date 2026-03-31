@@ -25,7 +25,29 @@ export interface SerializedNode {
     fills?: unknown[];
     strokes?: unknown[];
     characters?: string;
+    fontSize?: number;
+    fontName?: {
+        family: string;
+        style: string;
+    };
     layoutMode?: string;
+    itemSpacing?: number;
+    paddingTop?: number;
+    paddingRight?: number;
+    paddingBottom?: number;
+    paddingLeft?: number;
+    layoutAlign?: string;
+    layoutGrow?: number;
+    layoutSizingHorizontal?: string;
+    layoutSizingVertical?: string;
+    layoutPositioning?: string;
+    blendMode?: string;
+    cornerRadius?: number;
+    constraints?: {
+        horizontal: string;
+        vertical: string;
+    };
+    componentId?: string;
     children?: SerializedNode[];
 }
 //# sourceMappingURL=protocol.d.ts.map

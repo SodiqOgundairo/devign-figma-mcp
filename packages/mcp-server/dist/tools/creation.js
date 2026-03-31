@@ -9,7 +9,7 @@ export function registerCreationTools(server, bridge) {
         height: z.number().positive().describe("Height in pixels"),
         x: z.number().default(0),
         y: z.number().default(0),
-        fills: z.array(fillSchema).optional().describe("Background fills"),
+        fills: z.array(fillSchema).optional().describe("Background fills (solid, gradient, or image)"),
         parentId: z.string().optional().describe("Parent node ID; defaults to current page"),
         autoLayout: z.object({
             direction: z.enum(["HORIZONTAL", "VERTICAL"]),
@@ -101,6 +101,49 @@ export function registerCreationTools(server, bridge) {
     }, async (args) => {
         try {
             const data = await bridge.send(CommandType.ADD_SHAPE, args);
+            return toolResult(data);
+        }
+        catch (e) {
+            return toolError(e.message);
+        }
+    });
+    server.tool("create_section", "Create a section node for organizing designs on the canvas", {
+        name: z.string().describe("Section name"),
+        x: z.number().default(0),
+        y: z.number().default(0),
+        width: z.number().positive().optional().default(500),
+        height: z.number().positive().optional().default(500),
+        fills: z.array(fillSchema).optional(),
+    }, async (args) => {
+        try {
+            const data = await bridge.send(CommandType.CREATE_SECTION, args);
+            return toolResult(data);
+        }
+        catch (e) {
+            return toolError(e.message);
+        }
+    });
+    server.tool("clone_node", "Clone/duplicate an existing node", {
+        nodeId: z.string().describe("Node ID to clone"),
+        x: z.number().optional().describe("New X position (defaults to offset from original)"),
+        y: z.number().optional().describe("New Y position (defaults to offset from original)"),
+        parentId: z.string().optional().describe("Parent to clone into (defaults to same parent)"),
+    }, async (args) => {
+        try {
+            const data = await bridge.send(CommandType.CLONE_NODE, args);
+            return toolResult(data);
+        }
+        catch (e) {
+            return toolError(e.message);
+        }
+    });
+    server.tool("set_image_fill", "Set an image fill on a node from a URL", {
+        nodeId: z.string().describe("Target node ID"),
+        imageUrl: z.string().describe("URL of the image to fetch"),
+        scaleMode: z.enum(["FILL", "FIT", "CROP", "TILE"]).optional().default("FILL"),
+    }, async (args) => {
+        try {
+            const data = await bridge.send(CommandType.SET_IMAGE_FILL, args);
             return toolResult(data);
         }
         catch (e) {

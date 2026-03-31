@@ -15,10 +15,30 @@ function serializeNode(node: SceneNode, depth: number): SerializedNode {
     rotation: node.rotation,
   };
 
+  // Blend mode
+  if ("blendMode" in node) {
+    result.blendMode = (node as any).blendMode;
+  }
+
+  // Constraints
+  if ("constraints" in node) {
+    result.constraints = (node as any).constraints;
+  }
+
   if ("fills" in node && Array.isArray(node.fills)) {
     result.fills = (node.fills as Paint[]).map((f) => {
       if (f.type === "SOLID") {
         return { type: "SOLID", color: f.color, opacity: f.opacity };
+      }
+      if (f.type === "IMAGE") {
+        return { type: "IMAGE", imageHash: (f as ImagePaint).imageHash, scaleMode: (f as ImagePaint).scaleMode };
+      }
+      if (f.type.startsWith("GRADIENT")) {
+        return {
+          type: f.type,
+          gradientStops: (f as GradientPaint).gradientStops,
+          opacity: f.opacity,
+        };
       }
       return { type: f.type };
     });
@@ -34,11 +54,22 @@ function serializeNode(node: SceneNode, depth: number): SerializedNode {
   }
 
   if (node.type === "TEXT") {
-    result.characters = (node as TextNode).characters;
+    const text = node as TextNode;
+    result.characters = text.characters;
+    result.fontSize = typeof text.fontSize === "number" ? text.fontSize : undefined;
+    result.fontName = text.fontName !== figma.mixed ? text.fontName : undefined;
   }
 
   if ("layoutMode" in node) {
-    result.layoutMode = (node as FrameNode).layoutMode;
+    const frame = node as FrameNode;
+    result.layoutMode = frame.layoutMode;
+    if (frame.layoutMode !== "NONE") {
+      result.itemSpacing = frame.itemSpacing;
+      result.paddingTop = frame.paddingTop;
+      result.paddingRight = frame.paddingRight;
+      result.paddingBottom = frame.paddingBottom;
+      result.paddingLeft = frame.paddingLeft;
+    }
   }
 
   // Auto-layout child properties
@@ -52,6 +83,12 @@ function serializeNode(node: SceneNode, depth: number): SerializedNode {
   if (node.type === "INSTANCE") {
     const mainComponent = (node as InstanceNode).mainComponent;
     if (mainComponent) result.componentId = mainComponent.id;
+  }
+
+  // Corner radius
+  if ("cornerRadius" in node) {
+    const cr = (node as any).cornerRadius;
+    if (cr !== figma.mixed) result.cornerRadius = cr;
   }
 
   if ("children" in node && depth > 1) {
@@ -83,6 +120,15 @@ export async function handleReading(command: string, params: Record<string, unkn
       if (!("x" in node)) throw new Error(`Node ${p.nodeId} is not a scene node`);
       const depth = p.includeChildren ? (p.depth ?? 2) : 1;
       return serializeNode(node as SceneNode, depth);
+    }
+
+    case "get_selection": {
+      const depth = p.depth ?? 2;
+      const selection = figma.currentPage.selection;
+      return {
+        count: selection.length,
+        nodes: selection.map((node) => serializeNode(node, depth)),
+      };
     }
 
     default:

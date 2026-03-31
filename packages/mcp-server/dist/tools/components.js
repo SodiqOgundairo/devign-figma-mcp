@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { CommandType } from "../types.js";
+import { fillSchema } from "../utils/schemas.js";
 import { toolResult, toolError } from "../utils/errors.js";
 export function registerComponentTools(server, bridge) {
     server.tool("create_component", "Create a new reusable component", {
@@ -8,6 +9,7 @@ export function registerComponentTools(server, bridge) {
         height: z.number().positive(),
         x: z.number().default(0),
         y: z.number().default(0),
+        fills: z.array(fillSchema).optional().describe("Background fills"),
         parentId: z.string().optional(),
     }, async (args) => {
         try {

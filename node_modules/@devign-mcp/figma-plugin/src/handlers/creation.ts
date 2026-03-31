@@ -1,5 +1,3 @@
-import type { SerializedNode } from "../types";
-
 function getParent(parentId?: string): BaseNode & ChildrenMixin {
   if (parentId) {
     const node = figma.getNodeById(parentId);
@@ -13,15 +11,33 @@ function getParent(parentId?: string): BaseNode & ChildrenMixin {
 function applyFills(node: GeometryMixin, fills?: unknown[]) {
   if (!fills || fills.length === 0) return;
   const paintFills: Paint[] = fills.map((f: any) => {
-    if (f.type === "SOLID" && f.color) {
-      return {
-        type: "SOLID",
-        color: { r: f.color.r, g: f.color.g, b: f.color.b },
-        opacity: f.opacity ?? 1,
-        visible: f.visible ?? true,
-      };
+    switch (f.type) {
+      case "SOLID":
+        return {
+          type: "SOLID",
+          color: { r: f.color?.r ?? 0, g: f.color?.g ?? 0, b: f.color?.b ?? 0 },
+          opacity: f.opacity ?? 1,
+          visible: f.visible ?? true,
+        } as SolidPaint;
+
+      case "GRADIENT_LINEAR":
+      case "GRADIENT_RADIAL":
+      case "GRADIENT_ANGULAR":
+      case "GRADIENT_DIAMOND":
+        return {
+          type: f.type,
+          gradientStops: (f.gradientStops ?? []).map((s: any) => ({
+            position: s.position,
+            color: { r: s.color.r, g: s.color.g, b: s.color.b, a: s.color.a ?? 1 },
+          })),
+          gradientTransform: f.gradientTransform ?? [[1, 0, 0], [0, 1, 0]],
+          opacity: f.opacity ?? 1,
+          visible: f.visible ?? true,
+        } as GradientPaint;
+
+      default:
+        return { type: "SOLID", color: { r: 0, g: 0, b: 0 } } as SolidPaint;
     }
-    return { type: "SOLID", color: { r: 0, g: 0, b: 0 } };
   });
   node.fills = paintFills;
 }
@@ -36,7 +52,7 @@ function nodeResult(node: SceneNode) {
 
 export async function handleCreation(command: string, params: Record<string, unknown>) {
   const p = params as any;
-  const parent = getParent(p.parentId);
+  const parent = command === "create_section" ? figma.currentPage : getParent(p.parentId);
 
   switch (command) {
     case "create_frame": {
@@ -70,8 +86,22 @@ export async function handleCreation(command: string, params: Record<string, unk
       comp.resize(p.width ?? 100, p.height ?? 100);
       comp.x = p.x ?? 0;
       comp.y = p.y ?? 0;
+      applyFills(comp, p.fills);
       parent.appendChild(comp);
       return nodeResult(comp);
+    }
+
+    case "create_section": {
+      const section = figma.createSection();
+      section.name = p.name ?? "Section";
+      section.x = p.x ?? 0;
+      section.y = p.y ?? 0;
+      if (p.width && p.height) section.resizeWithoutConstraints(p.width, p.height);
+      // Sections support fills
+      if (p.fills) {
+        applyFills(section as any, p.fills);
+      }
+      return nodeResult(section);
     }
 
     case "add_rectangle": {
@@ -129,31 +159,56 @@ export async function handleCreation(command: string, params: Record<string, unk
         line.name = p.name ?? "Line";
         parent.appendChild(line);
         shape = line;
+      } else if (p.shapeType === "STAR") {
+        const star = figma.createStar();
+        star.name = p.name ?? "Star";
+        star.resize(p.width ?? 100, p.height ?? 100);
+        star.x = p.x ?? 0;
+        star.y = p.y ?? 0;
+        if (p.pointCount) star.pointCount = p.pointCount;
+        applyFills(star, p.fills);
+        parent.appendChild(star);
+        shape = star;
       } else {
         const polygon = figma.createPolygon();
-        polygon.name = p.name ?? p.shapeType ?? "Polygon";
+        polygon.name = p.name ?? "Polygon";
         polygon.resize(p.width ?? 100, p.height ?? 100);
         polygon.x = p.x ?? 0;
         polygon.y = p.y ?? 0;
         if (p.pointCount) polygon.pointCount = p.pointCount;
-        if (p.shapeType === "STAR") {
-          // Use a star polygon with inner radius ratio
-          const star = figma.createStar();
-          star.name = p.name ?? "Star";
-          star.resize(p.width ?? 100, p.height ?? 100);
-          star.x = p.x ?? 0;
-          star.y = p.y ?? 0;
-          if (p.pointCount) star.pointCount = p.pointCount;
-          applyFills(star, p.fills);
-          parent.appendChild(star);
-          polygon.remove();
-          return nodeResult(star);
-        }
         applyFills(polygon, p.fills);
         parent.appendChild(polygon);
         shape = polygon;
       }
       return nodeResult(shape);
+    }
+
+    case "clone_node": {
+      const source = figma.getNodeById(p.nodeId);
+      if (!source) throw new Error(`Node not found: ${p.nodeId}`);
+      const clone = (source as SceneNode).clone();
+      if (p.x !== undefined) clone.x = p.x;
+      else clone.x += 20;
+      if (p.y !== undefined) clone.y = p.y;
+      else clone.y += 20;
+      if (p.parentId) {
+        const newParent = getParent(p.parentId);
+        newParent.appendChild(clone);
+      }
+      return nodeResult(clone);
+    }
+
+    case "set_image_fill": {
+      const node = figma.getNodeById(p.nodeId);
+      if (!node) throw new Error(`Node not found: ${p.nodeId}`);
+      if (!("fills" in node)) throw new Error(`Node ${p.nodeId} does not support fills`);
+      const image = await figma.createImageAsync(p.imageUrl);
+      (node as GeometryMixin).fills = [{
+        type: "IMAGE",
+        imageHash: image.hash,
+        scaleMode: p.scaleMode ?? "FILL",
+      }];
+      return { success: true, nodeId: p.nodeId, imageHash: image.hash };
     }
 
     default:

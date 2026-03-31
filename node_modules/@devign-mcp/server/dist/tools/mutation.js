@@ -2,7 +2,7 @@ import { z } from "zod";
 import { CommandType } from "../types.js";
 import { toolResult, toolError } from "../utils/errors.js";
 export function registerMutationTools(server, bridge) {
-    server.tool("edit_node", "Edit properties of an existing node: position, size, name, visibility, rotation, and auto-layout child properties", {
+    server.tool("edit_node", "Edit properties of an existing node: position, size, name, visibility, rotation, blend mode, constraints, and auto-layout child properties", {
         nodeId: z.string().describe("Target node ID"),
         name: z.string().optional(),
         x: z.number().optional(),
@@ -13,6 +13,18 @@ export function registerMutationTools(server, bridge) {
         locked: z.boolean().optional(),
         rotation: z.number().optional().describe("Rotation in degrees"),
         characters: z.string().optional().describe("New text content (text nodes only)"),
+        // Blend mode
+        blendMode: z.enum([
+            "NORMAL", "DARKEN", "MULTIPLY", "COLOR_BURN", "LINEAR_BURN",
+            "LIGHTEN", "SCREEN", "COLOR_DODGE", "LINEAR_DODGE",
+            "OVERLAY", "SOFT_LIGHT", "HARD_LIGHT",
+            "DIFFERENCE", "EXCLUSION", "HUE", "SATURATION", "COLOR", "LUMINOSITY",
+        ]).optional(),
+        // Constraints (non-auto-layout frames)
+        constraints: z.object({
+            horizontal: z.enum(["MIN", "CENTER", "MAX", "STRETCH", "SCALE"]),
+            vertical: z.enum(["MIN", "CENTER", "MAX", "STRETCH", "SCALE"]),
+        }).optional().describe("Positioning constraints within parent frame"),
         // Auto-layout child properties
         layoutAlign: z.enum(["INHERIT", "STRETCH"]).optional()
             .describe("Cross-axis alignment within parent auto-layout"),

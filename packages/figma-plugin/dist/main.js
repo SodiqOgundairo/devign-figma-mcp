@@ -57,16 +57,35 @@
   function applyFills(node, fills) {
     if (!fills || fills.length === 0) return;
     const paintFills = fills.map((f) => {
-      var _a, _b;
-      if (f.type === "SOLID" && f.color) {
-        return {
-          type: "SOLID",
-          color: { r: f.color.r, g: f.color.g, b: f.color.b },
-          opacity: (_a = f.opacity) != null ? _a : 1,
-          visible: (_b = f.visible) != null ? _b : true
-        };
+      var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l;
+      switch (f.type) {
+        case "SOLID":
+          return {
+            type: "SOLID",
+            color: { r: (_b = (_a = f.color) == null ? void 0 : _a.r) != null ? _b : 0, g: (_d = (_c = f.color) == null ? void 0 : _c.g) != null ? _d : 0, b: (_f = (_e = f.color) == null ? void 0 : _e.b) != null ? _f : 0 },
+            opacity: (_g = f.opacity) != null ? _g : 1,
+            visible: (_h = f.visible) != null ? _h : true
+          };
+        case "GRADIENT_LINEAR":
+        case "GRADIENT_RADIAL":
+        case "GRADIENT_ANGULAR":
+        case "GRADIENT_DIAMOND":
+          return {
+            type: f.type,
+            gradientStops: ((_i = f.gradientStops) != null ? _i : []).map((s) => {
+              var _a2;
+              return {
+                position: s.position,
+                color: { r: s.color.r, g: s.color.g, b: s.color.b, a: (_a2 = s.color.a) != null ? _a2 : 1 }
+              };
+            }),
+            gradientTransform: (_j = f.gradientTransform) != null ? _j : [[1, 0, 0], [0, 1, 0]],
+            opacity: (_k = f.opacity) != null ? _k : 1,
+            visible: (_l = f.visible) != null ? _l : true
+          };
+        default:
+          return { type: "SOLID", color: { r: 0, g: 0, b: 0 } };
       }
-      return { type: "SOLID", color: { r: 0, g: 0, b: 0 } };
     });
     node.fills = paintFills;
   }
@@ -79,9 +98,9 @@
   }
   function handleCreation(command, params) {
     return __async(this, null, function* () {
-      var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _A, _B, _C, _D, _E, _F, _G, _H, _I, _J, _K, _L, _M, _N, _O, _P, _Q, _R;
+      var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _A, _B, _C, _D, _E, _F, _G, _H, _I, _J, _K, _L, _M, _N, _O, _P, _Q, _R, _S, _T, _U;
       const p = params;
-      const parent = getParent(p.parentId);
+      const parent = command === "create_section" ? figma.currentPage : getParent(p.parentId);
       switch (command) {
         case "create_frame": {
           const frame = figma.createFrame();
@@ -113,15 +132,27 @@
           comp.resize((_g = p.width) != null ? _g : 100, (_h = p.height) != null ? _h : 100);
           comp.x = (_i = p.x) != null ? _i : 0;
           comp.y = (_j = p.y) != null ? _j : 0;
+          applyFills(comp, p.fills);
           parent.appendChild(comp);
           return nodeResult(comp);
         }
+        case "create_section": {
+          const section = figma.createSection();
+          section.name = (_k = p.name) != null ? _k : "Section";
+          section.x = (_l = p.x) != null ? _l : 0;
+          section.y = (_m = p.y) != null ? _m : 0;
+          if (p.width && p.height) section.resizeWithoutConstraints(p.width, p.height);
+          if (p.fills) {
+            applyFills(section, p.fills);
+          }
+          return nodeResult(section);
+        }
         case "add_rectangle": {
           const rect = figma.createRectangle();
-          rect.name = (_k = p.name) != null ? _k : "Rectangle";
-          rect.resize((_l = p.width) != null ? _l : 100, (_m = p.height) != null ? _m : 100);
-          rect.x = (_n = p.x) != null ? _n : 0;
-          rect.y = (_o = p.y) != null ? _o : 0;
+          rect.name = (_n = p.name) != null ? _n : "Rectangle";
+          rect.resize((_o = p.width) != null ? _o : 100, (_p = p.height) != null ? _p : 100);
+          rect.x = (_q = p.x) != null ? _q : 0;
+          rect.y = (_r = p.y) != null ? _r : 0;
           if (p.cornerRadius !== void 0) {
             rect.cornerRadius = p.cornerRadius;
           }
@@ -131,25 +162,25 @@
         }
         case "add_ellipse": {
           const ellipse = figma.createEllipse();
-          ellipse.name = (_p = p.name) != null ? _p : "Ellipse";
-          ellipse.resize((_q = p.width) != null ? _q : 100, (_r = p.height) != null ? _r : 100);
-          ellipse.x = (_s = p.x) != null ? _s : 0;
-          ellipse.y = (_t = p.y) != null ? _t : 0;
+          ellipse.name = (_s = p.name) != null ? _s : "Ellipse";
+          ellipse.resize((_t = p.width) != null ? _t : 100, (_u = p.height) != null ? _u : 100);
+          ellipse.x = (_v = p.x) != null ? _v : 0;
+          ellipse.y = (_w = p.y) != null ? _w : 0;
           applyFills(ellipse, p.fills);
           parent.appendChild(ellipse);
           return nodeResult(ellipse);
         }
         case "add_text": {
           const text = figma.createText();
-          const family = (_u = p.fontFamily) != null ? _u : "Inter";
-          const style = (_v = p.fontWeight) != null ? _v : "Regular";
+          const family = (_x = p.fontFamily) != null ? _x : "Inter";
+          const style = (_y = p.fontWeight) != null ? _y : "Regular";
           yield figma.loadFontAsync({ family, style });
           text.fontName = { family, style };
-          text.characters = (_w = p.content) != null ? _w : "";
-          text.fontSize = (_x = p.fontSize) != null ? _x : 16;
-          text.name = (_A = (_z = p.name) != null ? _z : (_y = p.content) == null ? void 0 : _y.substring(0, 20)) != null ? _A : "Text";
-          text.x = (_B = p.x) != null ? _B : 0;
-          text.y = (_C = p.y) != null ? _C : 0;
+          text.characters = (_z = p.content) != null ? _z : "";
+          text.fontSize = (_A = p.fontSize) != null ? _A : 16;
+          text.name = (_D = (_C = p.name) != null ? _C : (_B = p.content) == null ? void 0 : _B.substring(0, 20)) != null ? _D : "Text";
+          text.x = (_E = p.x) != null ? _E : 0;
+          text.y = (_F = p.y) != null ? _F : 0;
           if (p.width) {
             text.resize(p.width, text.height);
             text.textAutoResize = "HEIGHT";
@@ -162,36 +193,60 @@
           let shape;
           if (p.shapeType === "LINE") {
             const line = figma.createLine();
-            line.resize((_D = p.width) != null ? _D : 100, 0);
-            line.x = (_E = p.x) != null ? _E : 0;
-            line.y = (_F = p.y) != null ? _F : 0;
-            line.name = (_G = p.name) != null ? _G : "Line";
+            line.resize((_G = p.width) != null ? _G : 100, 0);
+            line.x = (_H = p.x) != null ? _H : 0;
+            line.y = (_I = p.y) != null ? _I : 0;
+            line.name = (_J = p.name) != null ? _J : "Line";
             parent.appendChild(line);
             shape = line;
+          } else if (p.shapeType === "STAR") {
+            const star = figma.createStar();
+            star.name = (_K = p.name) != null ? _K : "Star";
+            star.resize((_L = p.width) != null ? _L : 100, (_M = p.height) != null ? _M : 100);
+            star.x = (_N = p.x) != null ? _N : 0;
+            star.y = (_O = p.y) != null ? _O : 0;
+            if (p.pointCount) star.pointCount = p.pointCount;
+            applyFills(star, p.fills);
+            parent.appendChild(star);
+            shape = star;
           } else {
             const polygon = figma.createPolygon();
-            polygon.name = (_I = (_H = p.name) != null ? _H : p.shapeType) != null ? _I : "Polygon";
-            polygon.resize((_J = p.width) != null ? _J : 100, (_K = p.height) != null ? _K : 100);
-            polygon.x = (_L = p.x) != null ? _L : 0;
-            polygon.y = (_M = p.y) != null ? _M : 0;
+            polygon.name = (_P = p.name) != null ? _P : "Polygon";
+            polygon.resize((_Q = p.width) != null ? _Q : 100, (_R = p.height) != null ? _R : 100);
+            polygon.x = (_S = p.x) != null ? _S : 0;
+            polygon.y = (_T = p.y) != null ? _T : 0;
             if (p.pointCount) polygon.pointCount = p.pointCount;
-            if (p.shapeType === "STAR") {
-              const star = figma.createStar();
-              star.name = (_N = p.name) != null ? _N : "Star";
-              star.resize((_O = p.width) != null ? _O : 100, (_P = p.height) != null ? _P : 100);
-              star.x = (_Q = p.x) != null ? _Q : 0;
-              star.y = (_R = p.y) != null ? _R : 0;
-              if (p.pointCount) star.pointCount = p.pointCount;
-              applyFills(star, p.fills);
-              parent.appendChild(star);
-              polygon.remove();
-              return nodeResult(star);
-            }
             applyFills(polygon, p.fills);
             parent.appendChild(polygon);
             shape = polygon;
           }
           return nodeResult(shape);
+        }
+        case "clone_node": {
+          const source = figma.getNodeById(p.nodeId);
+          if (!source) throw new Error(`Node not found: ${p.nodeId}`);
+          const clone = source.clone();
+          if (p.x !== void 0) clone.x = p.x;
+          else clone.x += 20;
+          if (p.y !== void 0) clone.y = p.y;
+          else clone.y += 20;
+          if (p.parentId) {
+            const newParent = getParent(p.parentId);
+            newParent.appendChild(clone);
+          }
+          return nodeResult(clone);
+        }
+        case "set_image_fill": {
+          const node = figma.getNodeById(p.nodeId);
+          if (!node) throw new Error(`Node not found: ${p.nodeId}`);
+          if (!("fills" in node)) throw new Error(`Node ${p.nodeId} does not support fills`);
+          const image = yield figma.createImageAsync(p.imageUrl);
+          node.fills = [{
+            type: "IMAGE",
+            imageHash: image.hash,
+            scaleMode: (_U = p.scaleMode) != null ? _U : "FILL"
+          }];
+          return { success: true, nodeId: p.nodeId, imageHash: image.hash };
         }
         default:
           throw new Error(`Unknown creation command: ${command}`);
@@ -391,10 +446,26 @@
       opacity: node.opacity,
       rotation: node.rotation
     };
+    if ("blendMode" in node) {
+      result.blendMode = node.blendMode;
+    }
+    if ("constraints" in node) {
+      result.constraints = node.constraints;
+    }
     if ("fills" in node && Array.isArray(node.fills)) {
       result.fills = node.fills.map((f) => {
         if (f.type === "SOLID") {
           return { type: "SOLID", color: f.color, opacity: f.opacity };
+        }
+        if (f.type === "IMAGE") {
+          return { type: "IMAGE", imageHash: f.imageHash, scaleMode: f.scaleMode };
+        }
+        if (f.type.startsWith("GRADIENT")) {
+          return {
+            type: f.type,
+            gradientStops: f.gradientStops,
+            opacity: f.opacity
+          };
         }
         return { type: f.type };
       });
@@ -408,10 +479,21 @@
       });
     }
     if (node.type === "TEXT") {
-      result.characters = node.characters;
+      const text = node;
+      result.characters = text.characters;
+      result.fontSize = typeof text.fontSize === "number" ? text.fontSize : void 0;
+      result.fontName = text.fontName !== figma.mixed ? text.fontName : void 0;
     }
     if ("layoutMode" in node) {
-      result.layoutMode = node.layoutMode;
+      const frame = node;
+      result.layoutMode = frame.layoutMode;
+      if (frame.layoutMode !== "NONE") {
+        result.itemSpacing = frame.itemSpacing;
+        result.paddingTop = frame.paddingTop;
+        result.paddingRight = frame.paddingRight;
+        result.paddingBottom = frame.paddingBottom;
+        result.paddingLeft = frame.paddingLeft;
+      }
     }
     if ("layoutAlign" in node) result.layoutAlign = node.layoutAlign;
     if ("layoutGrow" in node) result.layoutGrow = node.layoutGrow;
@@ -422,6 +504,10 @@
       const mainComponent = node.mainComponent;
       if (mainComponent) result.componentId = mainComponent.id;
     }
+    if ("cornerRadius" in node) {
+      const cr = node.cornerRadius;
+      if (cr !== figma.mixed) result.cornerRadius = cr;
+    }
     if ("children" in node && depth > 1) {
       result.children = node.children.map(
         (child) => serializeNode(child, depth - 1)
@@ -431,7 +517,7 @@
   }
   function handleReading(command, params) {
     return __async(this, null, function* () {
-      var _a, _b;
+      var _a, _b, _c;
       const p = params;
       switch (command) {
         case "read_current_page": {
@@ -449,6 +535,14 @@
           if (!("x" in node)) throw new Error(`Node ${p.nodeId} is not a scene node`);
           const depth = p.includeChildren ? (_b = p.depth) != null ? _b : 2 : 1;
           return serializeNode(node, depth);
+        }
+        case "get_selection": {
+          const depth = (_c = p.depth) != null ? _c : 2;
+          const selection = figma.currentPage.selection;
+          return {
+            count: selection.length,
+            nodes: selection.map((node) => serializeNode(node, depth))
+          };
         }
         default:
           throw new Error(`Unknown reading command: ${command}`);
@@ -489,6 +583,12 @@
             const fontName = text.fontName;
             yield figma.loadFontAsync(fontName);
             text.characters = p.characters;
+          }
+          if (p.blendMode !== void 0 && "blendMode" in scene) {
+            scene.blendMode = p.blendMode;
+          }
+          if (p.constraints !== void 0 && "constraints" in scene) {
+            scene.constraints = p.constraints;
           }
           if (p.layoutAlign !== void 0) scene.layoutAlign = p.layoutAlign;
           if (p.layoutGrow !== void 0) scene.layoutGrow = p.layoutGrow;
@@ -730,6 +830,268 @@
     }
   });
 
+  // src/handlers/vectors.ts
+  function getParent2(parentId) {
+    if (parentId) {
+      const node = figma.getNodeById(parentId);
+      if (!node) throw new Error(`Parent node not found: ${parentId}`);
+      if (!("children" in node)) throw new Error(`Node ${parentId} cannot have children`);
+      return node;
+    }
+    return figma.currentPage;
+  }
+  function handleVectors(command, params) {
+    return __async(this, null, function* () {
+      var _a, _b, _c, _d, _e;
+      const p = params;
+      switch (command) {
+        case "create_vector": {
+          const vector = figma.createVector();
+          vector.name = (_a = p.name) != null ? _a : "Vector";
+          vector.x = (_b = p.x) != null ? _b : 0;
+          vector.y = (_c = p.y) != null ? _c : 0;
+          vector.vectorPaths = p.paths.map((path) => {
+            var _a2;
+            return {
+              data: path.data,
+              windingRule: (_a2 = path.windingRule) != null ? _a2 : "NONZERO"
+            };
+          });
+          if (p.width && p.height) {
+            vector.resize(p.width, p.height);
+          }
+          if (p.fills && p.fills.length > 0) {
+            vector.fills = p.fills.map((f) => {
+              var _a2;
+              if (f.type === "SOLID" && f.color) {
+                return {
+                  type: "SOLID",
+                  color: { r: f.color.r, g: f.color.g, b: f.color.b },
+                  opacity: (_a2 = f.opacity) != null ? _a2 : 1
+                };
+              }
+              return { type: "SOLID", color: { r: 0, g: 0, b: 0 } };
+            });
+          }
+          const parent = getParent2(p.parentId);
+          parent.appendChild(vector);
+          return { nodeId: vector.id, name: vector.name, type: vector.type };
+        }
+        case "create_from_svg": {
+          const svgNode = figma.createNodeFromSvg(p.svg);
+          svgNode.x = (_d = p.x) != null ? _d : 0;
+          svgNode.y = (_e = p.y) != null ? _e : 0;
+          if (p.name) svgNode.name = p.name;
+          if (p.parentId) {
+            const parent = getParent2(p.parentId);
+            parent.appendChild(svgNode);
+          }
+          return { nodeId: svgNode.id, name: svgNode.name, type: svgNode.type };
+        }
+        case "boolean_operation": {
+          const nodes = [];
+          for (const id of p.nodeIds) {
+            const node = figma.getNodeById(id);
+            if (!node) throw new Error(`Node not found: ${id}`);
+            nodes.push(node);
+          }
+          if (nodes.length < 2) throw new Error("Boolean operations require at least 2 nodes");
+          const parentNode = nodes[0].parent;
+          let result;
+          switch (p.operation) {
+            case "UNION":
+              result = figma.union(nodes, parentNode);
+              break;
+            case "SUBTRACT":
+              result = figma.subtract(nodes, parentNode);
+              break;
+            case "INTERSECT":
+              result = figma.intersect(nodes, parentNode);
+              break;
+            case "EXCLUDE":
+              result = figma.exclude(nodes, parentNode);
+              break;
+            default:
+              throw new Error(`Unknown boolean operation: ${p.operation}`);
+          }
+          if (p.name) result.name = p.name;
+          return { nodeId: result.id, name: result.name, type: result.type };
+        }
+        default:
+          throw new Error(`Unknown vector command: ${command}`);
+      }
+    });
+  }
+  var init_vectors = __esm({
+    "src/handlers/vectors.ts"() {
+      "use strict";
+    }
+  });
+
+  // src/handlers/design-system.ts
+  function handleDesignSystem(command, params) {
+    return __async(this, null, function* () {
+      var _a, _b;
+      const p = params;
+      switch (command) {
+        // ── Variable Creation ──
+        case "create_variable_collection": {
+          const collection = figma.variables.createVariableCollection(p.name);
+          if (p.modes && p.modes.length > 0) {
+            collection.renameMode(collection.modes[0].modeId, p.modes[0]);
+            for (let i = 1; i < p.modes.length; i++) {
+              collection.addMode(p.modes[i]);
+            }
+          }
+          return {
+            collectionId: collection.id,
+            name: collection.name,
+            modes: collection.modes.map((m) => ({ modeId: m.modeId, name: m.name }))
+          };
+        }
+        case "create_variable": {
+          const collection = figma.variables.getVariableCollectionById(p.collectionId);
+          if (!collection) throw new Error(`Collection not found: ${p.collectionId}`);
+          const variable = figma.variables.createVariable(p.name, collection, p.resolvedType);
+          if (p.values) {
+            for (const [modeName, value] of Object.entries(p.values)) {
+              const mode = collection.modes.find((m) => m.name === modeName);
+              if (!mode) throw new Error(`Mode not found: ${modeName}`);
+              variable.setValueForMode(mode.modeId, value);
+            }
+          }
+          return {
+            variableId: variable.id,
+            name: variable.name,
+            resolvedType: variable.resolvedType,
+            collectionId: p.collectionId
+          };
+        }
+        case "set_variable_value": {
+          const variable = figma.variables.getVariableById(p.variableId);
+          if (!variable) throw new Error(`Variable not found: ${p.variableId}`);
+          const collectionId = variable.variableCollectionId;
+          const collection = figma.variables.getVariableCollectionById(collectionId);
+          if (!collection) throw new Error(`Collection not found for variable: ${p.variableId}`);
+          const mode = collection.modes.find((m) => m.name === p.modeName);
+          if (!mode) throw new Error(`Mode not found: ${p.modeName}`);
+          variable.setValueForMode(mode.modeId, p.value);
+          return { success: true, variableId: p.variableId, modeName: p.modeName };
+        }
+        // ── Style Creation ──
+        case "create_paint_style": {
+          const style = figma.createPaintStyle();
+          style.name = p.name;
+          if (p.description) style.description = p.description;
+          style.paints = p.paints.map((paint) => {
+            var _a2, _b2, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l;
+            switch (paint.type) {
+              case "SOLID":
+                return {
+                  type: "SOLID",
+                  color: { r: (_b2 = (_a2 = paint.color) == null ? void 0 : _a2.r) != null ? _b2 : 0, g: (_d = (_c = paint.color) == null ? void 0 : _c.g) != null ? _d : 0, b: (_f = (_e = paint.color) == null ? void 0 : _e.b) != null ? _f : 0 },
+                  opacity: (_g = paint.opacity) != null ? _g : 1,
+                  visible: (_h = paint.visible) != null ? _h : true
+                };
+              case "GRADIENT_LINEAR":
+              case "GRADIENT_RADIAL":
+              case "GRADIENT_ANGULAR":
+              case "GRADIENT_DIAMOND":
+                return {
+                  type: paint.type,
+                  gradientStops: ((_i = paint.gradientStops) != null ? _i : []).map((s) => {
+                    var _a3;
+                    return {
+                      position: s.position,
+                      color: { r: s.color.r, g: s.color.g, b: s.color.b, a: (_a3 = s.color.a) != null ? _a3 : 1 }
+                    };
+                  }),
+                  gradientTransform: (_j = paint.gradientTransform) != null ? _j : [[1, 0, 0], [0, 1, 0]],
+                  opacity: (_k = paint.opacity) != null ? _k : 1,
+                  visible: (_l = paint.visible) != null ? _l : true
+                };
+              default:
+                return { type: "SOLID", color: { r: 0, g: 0, b: 0 } };
+            }
+          });
+          return { styleId: style.id, name: style.name, key: style.key };
+        }
+        case "create_text_style": {
+          const style = figma.createTextStyle();
+          style.name = p.name;
+          if (p.description) style.description = p.description;
+          const family = (_a = p.fontFamily) != null ? _a : "Inter";
+          const weight = (_b = p.fontWeight) != null ? _b : "Regular";
+          yield figma.loadFontAsync({ family, style: weight });
+          style.fontName = { family, style: weight };
+          style.fontSize = p.fontSize;
+          if (p.lineHeight !== void 0) {
+            style.lineHeight = { value: p.lineHeight, unit: "PIXELS" };
+          }
+          if (p.letterSpacing !== void 0) {
+            style.letterSpacing = { value: p.letterSpacing, unit: "PIXELS" };
+          }
+          if (p.textAlignHorizontal) {
+          }
+          return { styleId: style.id, name: style.name, key: style.key };
+        }
+        case "create_effect_style": {
+          const style = figma.createEffectStyle();
+          style.name = p.name;
+          if (p.description) style.description = p.description;
+          style.effects = p.effects.map((e) => {
+            var _a2, _b2, _c, _d, _e;
+            return {
+              type: e.type,
+              visible: (_a2 = e.visible) != null ? _a2 : true,
+              radius: (_b2 = e.radius) != null ? _b2 : 0,
+              color: e.color ? { r: e.color.r, g: e.color.g, b: e.color.b, a: (_c = e.color.a) != null ? _c : 1 } : { r: 0, g: 0, b: 0, a: 0.25 },
+              offset: (_d = e.offset) != null ? _d : { x: 0, y: 0 },
+              spread: (_e = e.spread) != null ? _e : 0
+            };
+          });
+          return { styleId: style.id, name: style.name, key: style.key };
+        }
+        // ── Component Variants ──
+        case "combine_as_variants": {
+          const components = [];
+          for (const id of p.componentIds) {
+            const node = figma.getNodeById(id);
+            if (!node) throw new Error(`Node not found: ${id}`);
+            if (node.type !== "COMPONENT") throw new Error(`Node ${id} is not a component (got ${node.type})`);
+            components.push(node);
+          }
+          const parent = components[0].parent;
+          const componentSet = figma.combineAsVariants(components, parent);
+          if (p.name) componentSet.name = p.name;
+          return {
+            nodeId: componentSet.id,
+            name: componentSet.name,
+            type: componentSet.type,
+            variantCount: components.length
+          };
+        }
+        case "add_component_property": {
+          const node = figma.getNodeById(p.componentId);
+          if (!node) throw new Error(`Node not found: ${p.componentId}`);
+          if (node.type !== "COMPONENT" && node.type !== "COMPONENT_SET") {
+            throw new Error(`Node ${p.componentId} is not a component/component set (got ${node.type})`);
+          }
+          const comp = node;
+          comp.addComponentProperty(p.propertyName, p.propertyType, p.defaultValue);
+          return { success: true, componentId: p.componentId, propertyName: p.propertyName };
+        }
+        default:
+          throw new Error(`Unknown design system command: ${command}`);
+      }
+    });
+  }
+  var init_design_system = __esm({
+    "src/handlers/design-system.ts"() {
+      "use strict";
+    }
+  });
+
   // src/main.ts
   var require_main = __commonJS({
     "src/main.ts"(exports) {
@@ -742,7 +1104,9 @@
       init_export();
       init_components();
       init_variables();
-      figma.showUI(__html__, { visible: true, width: 280, height: 180 });
+      init_vectors();
+      init_design_system();
+      figma.showUI(__html__, { visible: true, width: 300, height: 380 });
       figma.ui.onmessage = (msg) => __async(exports, null, function* () {
         var _a;
         if (!msg || !msg.id || !msg.command) return;
@@ -761,11 +1125,19 @@
             // Creation
             case "create_frame":
             case "create_component":
+            case "create_section":
             case "add_text":
             case "add_rectangle":
             case "add_ellipse":
             case "add_shape":
+            case "clone_node":
+            case "set_image_fill":
               return handleCreation(command, params);
+            // Vectors
+            case "create_vector":
+            case "create_from_svg":
+            case "boolean_operation":
+              return handleVectors(command, params);
             // Styling
             case "set_styles":
             case "list_styles":
@@ -777,6 +1149,7 @@
             // Reading
             case "read_current_page":
             case "get_node_by_id":
+            case "get_selection":
               return handleReading(command, params);
             // Mutation
             case "edit_node":
@@ -793,10 +1166,20 @@
             case "set_overrides":
             case "swap_component":
               return handleComponents(command, params);
-            // Variables
+            // Variables (read/bind)
             case "list_variables":
             case "bind_variable":
               return handleVariables(command, params);
+            // Design System (creation)
+            case "create_variable_collection":
+            case "create_variable":
+            case "set_variable_value":
+            case "create_paint_style":
+            case "create_text_style":
+            case "create_effect_style":
+            case "combine_as_variants":
+            case "add_component_property":
+              return handleDesignSystem(command, params);
             // Export
             case "export_node":
               return handleExport(params);

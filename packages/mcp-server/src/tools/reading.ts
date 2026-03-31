@@ -38,4 +38,20 @@ export function registerReadingTools(server: McpServer, bridge: WsBridge) {
       }
     }
   );
+
+  server.tool(
+    "get_selection",
+    "Get the currently selected nodes in Figma",
+    {
+      depth: z.number().int().min(1).optional().default(2).describe("How deep to serialize children"),
+    },
+    async (args) => {
+      try {
+        const data = await bridge.send(CommandType.GET_SELECTION, args);
+        return toolResult(data);
+      } catch (e: any) {
+        return toolError(e.message);
+      }
+    }
+  );
 }

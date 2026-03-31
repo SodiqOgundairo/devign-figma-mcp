@@ -7,8 +7,12 @@
   "editorType": ["figma"],
   "documentAccess": "dynamic-page",
   "networkAccess": {
-    "allowedDomains": ["none"],
+    "allowedDomains": ["ws://127.0.0.1:*"],
     "devAllowedDomains": ["*"],
     "reasoning": "Connects to local MCP bridge server for AI-assisted design"
-  }
+  },
+  "description": "Bridge between any AI model (via Model Context Protocol) and Figma. Enables AI to create frames, components, shapes, text, vectors, styles, variables, and full design systems directly on your canvas.",
+  "build": "npm run build",
+  "permissions": [],
+  "enableProposedApi": false
 }

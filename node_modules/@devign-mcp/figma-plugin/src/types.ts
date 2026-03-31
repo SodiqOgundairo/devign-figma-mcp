@@ -29,13 +29,25 @@ export interface SerializedNode {
   fills?: unknown[];
   strokes?: unknown[];
   characters?: string;
+  fontSize?: number;
+  fontName?: { family: string; style: string };
   layoutMode?: string;
+  itemSpacing?: number;
+  paddingTop?: number;
+  paddingRight?: number;
+  paddingBottom?: number;
+  paddingLeft?: number;
   // Auto-layout child properties
   layoutAlign?: string;
   layoutGrow?: number;
   layoutSizingHorizontal?: string;
   layoutSizingVertical?: string;
   layoutPositioning?: string;
+  // Visual
+  blendMode?: string;
+  cornerRadius?: number;
+  // Constraints
+  constraints?: { horizontal: string; vertical: string };
   // Component info
   componentId?: string;
   children?: SerializedNode[];

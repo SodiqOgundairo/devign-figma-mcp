@@ -1,25 +1,29 @@
 // UI thread — runs in an iframe with browser APIs (including WebSocket)
 // Relays messages between the WebSocket and the plugin main thread
 
-const WS_URL = "ws://127.0.0.1:3055";
+// Port can be overridden via plugin UI params; defaults to 3055
+const params = new URLSearchParams(window.location.search);
+const WS_URL = `ws://127.0.0.1:${params.get("port") ?? "3055"}`;
 const RECONNECT_BASE_MS = 1000;
 const RECONNECT_MAX_MS = 10000;
 
 let ws: WebSocket | null = null;
 let reconnectDelay = RECONNECT_BASE_MS;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let messageCount = 0;
 
 const dot = document.getElementById("dot")!;
 const statusEl = document.getElementById("status")!;
+const statusHint = document.getElementById("status-hint")!;
 const logEl = document.getElementById("log")!;
+const counterEl = document.getElementById("counter")!;
 
 function log(msg: string) {
   const line = document.createElement("div");
   line.textContent = `${new Date().toLocaleTimeString()} ${msg}`;
   logEl.appendChild(line);
   logEl.scrollTop = logEl.scrollHeight;
-  // Keep last 50 lines
-  while (logEl.children.length > 50) {
+  while (logEl.children.length > 80) {
     logEl.removeChild(logEl.firstChild!);
   }
 }
@@ -27,6 +31,14 @@ function log(msg: string) {
 function setConnected(connected: boolean) {
   dot.classList.toggle("connected", connected);
   statusEl.textContent = connected ? "Connected" : "Disconnected";
+  statusHint.textContent = connected
+    ? "AI tools can now read and write to this file."
+    : "Waiting for MCP server... Make sure it is running.";
+  statusHint.className = `hint ${connected ? "ok" : "warn"}`;
+}
+
+function updateCounter() {
+  counterEl.textContent = `${messageCount} command${messageCount === 1 ? "" : "s"} processed`;
 }
 
 function connect() {
@@ -51,7 +63,7 @@ function connect() {
   ws.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data as string);
-      // Forward to plugin main thread
+      log(`← ${data.command ?? "response"}`);
       parent.postMessage({ pluginMessage: data }, "*");
     } catch {
       log("Bad message from server");
@@ -86,6 +98,9 @@ onmessage = (event) => {
 
   if (ws && ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify(msg));
+    messageCount++;
+    updateCounter();
+    log(`→ ${msg.data ? "result" : "response"}`);
   } else {
     log("Cannot send: not connected");
   }

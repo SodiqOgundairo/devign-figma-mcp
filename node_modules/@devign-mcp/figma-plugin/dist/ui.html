@@ -2,67 +2,183 @@
 <html>
 <head>
   <style>
+    * { box-sizing: border-box; }
     body {
-      font-family: Inter, system-ui, sans-serif;
+      font-family: Inter, system-ui, -apple-system, sans-serif;
       margin: 0;
-      padding: 12px;
+      padding: 0;
       font-size: 12px;
       color: #333;
       background: #fff;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
     }
-    .status {
+
+    /* Header */
+    .header {
+      padding: 12px 14px;
+      border-bottom: 1px solid #e5e5e5;
+    }
+    .title-row {
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
+    }
+    .title-row h1 {
+      font-size: 13px;
+      font-weight: 600;
+      margin: 0;
+      color: #1a1a1a;
+    }
+    .badge {
+      font-size: 10px;
+      font-weight: 500;
+      padding: 1px 6px;
+      border-radius: 9999px;
+      background: #eef2ff;
+      color: #4f46e5;
+    }
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
     .dot {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: #e53e3e;
+      background: #ef4444;
+      flex-shrink: 0;
     }
-    .dot.connected {
-      background: #38a169;
+    .dot.connected { background: #22c55e; }
+    #status {
+      font-weight: 500;
+      font-size: 12px;
     }
-    #log {
+    .hint {
       font-size: 11px;
-      color: #666;
-      max-height: 120px;
-      overflow-y: auto;
+      margin-top: 6px;
+      line-height: 1.4;
     }
+    .hint.ok { color: #16a34a; }
+    .hint.warn { color: #b45309; }
+
+    /* Steps */
+    .steps {
+      padding: 10px 14px;
+      border-bottom: 1px solid #e5e5e5;
+      background: #fafafa;
+    }
+    .steps-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      font-size: 11px;
+      color: #555;
+      line-height: 1.4;
+      margin-bottom: 4px;
+    }
+    .step-num {
+      font-weight: 600;
+      color: #4f46e5;
+      flex-shrink: 0;
+    }
+    .step code {
+      background: #e5e7eb;
+      padding: 0 3px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-family: 'SF Mono', Consolas, monospace;
+    }
+
+    /* Counter */
+    #counter {
+      font-size: 11px;
+      color: #888;
+      padding: 6px 14px;
+      border-bottom: 1px solid #e5e5e5;
+    }
+
+    /* Log */
+    #log {
+      font-size: 10px;
+      font-family: 'SF Mono', Consolas, monospace;
+      color: #888;
+      padding: 8px 14px;
+      overflow-y: auto;
+      flex: 1;
+      line-height: 1.5;
+    }
+    #log div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   </style>
 </head>
 <body>
-  <div class="status">
-    <div class="dot" id="dot"></div>
-    <span id="status">Disconnected</span>
+  <div class="header">
+    <div class="title-row">
+      <h1>Devign MCP Bridge</h1>
+      <span class="badge">v2.0</span>
+    </div>
+    <div class="status-row">
+      <div class="dot" id="dot"></div>
+      <span id="status">Disconnected</span>
+    </div>
+    <div class="hint warn" id="status-hint">Waiting for MCP server... Make sure it is running.</div>
   </div>
+
+  <div class="steps">
+    <div class="steps-title">How to use</div>
+    <div class="step"><span class="step-num">1.</span> Run <code>npm start</code> in the devign-mcp folder</div>
+    <div class="step"><span class="step-num">2.</span> Keep this plugin open &mdash; it bridges AI to Figma</div>
+    <div class="step"><span class="step-num">3.</span> Ask your AI to create, read, or edit designs</div>
+  </div>
+
+  <div id="counter">0 commands processed</div>
   <div id="log"></div>
+
   <script>"use strict";
 (() => {
   // src/ui.ts
-  var WS_URL = "ws://127.0.0.1:3055";
+  var params = new URLSearchParams(window.location.search);
+  var _a;
+  var WS_URL = `ws://127.0.0.1:${(_a = params.get("port")) != null ? _a : "3055"}`;
   var RECONNECT_BASE_MS = 1e3;
   var RECONNECT_MAX_MS = 1e4;
   var ws = null;
   var reconnectDelay = RECONNECT_BASE_MS;
   var reconnectTimer = null;
+  var messageCount = 0;
   var dot = document.getElementById("dot");
   var statusEl = document.getElementById("status");
+  var statusHint = document.getElementById("status-hint");
   var logEl = document.getElementById("log");
+  var counterEl = document.getElementById("counter");
   function log(msg) {
     const line = document.createElement("div");
     line.textContent = `${(/* @__PURE__ */ new Date()).toLocaleTimeString()} ${msg}`;
     logEl.appendChild(line);
     logEl.scrollTop = logEl.scrollHeight;
-    while (logEl.children.length > 50) {
+    while (logEl.children.length > 80) {
       logEl.removeChild(logEl.firstChild);
     }
   }
   function setConnected(connected) {
     dot.classList.toggle("connected", connected);
     statusEl.textContent = connected ? "Connected" : "Disconnected";
+    statusHint.textContent = connected ? "AI tools can now read and write to this file." : "Waiting for MCP server... Make sure it is running.";
+    statusHint.className = `hint ${connected ? "ok" : "warn"}`;
+  }
+  function updateCounter() {
+    counterEl.textContent = `${messageCount} command${messageCount === 1 ? "" : "s"} processed`;
   }
   function connect() {
     if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) {
@@ -81,8 +197,10 @@
       log("Connected to MCP server");
     };
     ws.onmessage = (event) => {
+      var _a2;
       try {
         const data = JSON.parse(event.data);
+        log(`\u2190 ${(_a2 = data.command) != null ? _a2 : "response"}`);
         parent.postMessage({ pluginMessage: data }, "*");
       } catch (e) {
         log("Bad message from server");
@@ -106,11 +224,14 @@
     }, reconnectDelay);
   }
   onmessage = (event) => {
-    var _a;
-    const msg = (_a = event.data) == null ? void 0 : _a.pluginMessage;
+    var _a2;
+    const msg = (_a2 = event.data) == null ? void 0 : _a2.pluginMessage;
     if (!msg) return;
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify(msg));
+      messageCount++;
+      updateCounter();
+      log(`\u2192 ${msg.data ? "result" : "response"}`);
     } else {
       log("Cannot send: not connected");
     }

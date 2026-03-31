@@ -11,8 +11,10 @@ import { handleOrganization } from "./handlers/organization";
 import { handleExport } from "./handlers/export";
 import { handleComponents } from "./handlers/components";
 import { handleVariables } from "./handlers/variables";
+import { handleVectors } from "./handlers/vectors";
+import { handleDesignSystem } from "./handlers/design-system";
 
-figma.showUI(__html__, { visible: true, width: 280, height: 180 });
+figma.showUI(__html__, { visible: true, width: 300, height: 380 });
 
 figma.ui.onmessage = async (msg: BridgeRequest) => {
   if (!msg || !msg.id || !msg.command) return;
@@ -34,11 +36,20 @@ async function dispatch(command: string, params: Record<string, unknown>): Promi
     // Creation
     case "create_frame":
     case "create_component":
+    case "create_section":
     case "add_text":
     case "add_rectangle":
     case "add_ellipse":
     case "add_shape":
+    case "clone_node":
+    case "set_image_fill":
       return handleCreation(command, params);
+
+    // Vectors
+    case "create_vector":
+    case "create_from_svg":
+    case "boolean_operation":
+      return handleVectors(command, params);
 
     // Styling
     case "set_styles":
@@ -53,6 +64,7 @@ async function dispatch(command: string, params: Record<string, unknown>): Promi
     // Reading
     case "read_current_page":
     case "get_node_by_id":
+    case "get_selection":
       return handleReading(command, params);
 
     // Mutation
@@ -73,10 +85,21 @@ async function dispatch(command: string, params: Record<string, unknown>): Promi
     case "swap_component":
       return handleComponents(command, params);
 
-    // Variables
+    // Variables (read/bind)
     case "list_variables":
     case "bind_variable":
       return handleVariables(command, params);
+
+    // Design System (creation)
+    case "create_variable_collection":
+    case "create_variable":
+    case "set_variable_value":
+    case "create_paint_style":
+    case "create_text_style":
+    case "create_effect_style":
+    case "combine_as_variants":
+    case "add_component_property":
+      return handleDesignSystem(command, params);
 
     // Export
     case "export_node":

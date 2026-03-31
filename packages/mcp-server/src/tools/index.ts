@@ -9,6 +9,8 @@ import { registerMutationTools } from "./mutation.js";
 import { registerOrganizationTools } from "./organization.js";
 import { registerExportTools } from "./export.js";
 import { registerVariableTools } from "./variables.js";
+import { registerVectorTools } from "./vectors.js";
+import { registerDesignSystemTools } from "./design-system.js";
 
 export function registerAllTools(server: McpServer, bridge: WsBridge) {
   registerCreationTools(server, bridge);
@@ -20,4 +22,6 @@ export function registerAllTools(server: McpServer, bridge: WsBridge) {
   registerOrganizationTools(server, bridge);
   registerExportTools(server, bridge);
   registerVariableTools(server, bridge);
+  registerVectorTools(server, bridge);
+  registerDesignSystemTools(server, bridge);
 }

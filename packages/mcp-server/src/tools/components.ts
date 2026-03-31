@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { WsBridge } from "../ws-bridge.js";
 import { CommandType } from "../types.js";
+import { fillSchema } from "../utils/schemas.js";
 import { toolResult, toolError } from "../utils/errors.js";
 
 export function registerComponentTools(server: McpServer, bridge: WsBridge) {
@@ -14,6 +15,7 @@ export function registerComponentTools(server: McpServer, bridge: WsBridge) {
       height: z.number().positive(),
       x: z.number().default(0),
       y: z.number().default(0),
+      fills: z.array(fillSchema).optional().describe("Background fills"),
       parentId: z.string().optional(),
     },
     async (args) => {

@@ -29,6 +29,16 @@ export async function handleMutation(command: string, params: Record<string, unk
         text.characters = p.characters;
       }
 
+      // Blend mode
+      if (p.blendMode !== undefined && "blendMode" in scene) {
+        (scene as any).blendMode = p.blendMode;
+      }
+
+      // Constraints (non-auto-layout positioning)
+      if (p.constraints !== undefined && "constraints" in scene) {
+        (scene as any).constraints = p.constraints;
+      }
+
       // Auto-layout child properties
       if (p.layoutAlign !== undefined) (scene as any).layoutAlign = p.layoutAlign;
       if (p.layoutGrow !== undefined) (scene as any).layoutGrow = p.layoutGrow;

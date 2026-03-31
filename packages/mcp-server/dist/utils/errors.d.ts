@@ -1,5 +1,3 @@
-import type { WsBridge } from "../ws-bridge.js";
-export declare function ensureConnected(bridge: WsBridge): void;
 export declare function toolResult(data: unknown): {
     content: {
         type: "text";
